@@ -44,17 +44,21 @@ app.get("/", (req, res) => {
   `);
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 NERA-SMART Backend Server running on port ${PORT}`);
-  console.log(`👉 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`====================================================`);
-});
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  const server = app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 NERA-SMART Backend Server running on port ${PORT}`);
+    console.log(`👉 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`====================================================`);
+  });
 
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.log(`⚠️ Port ${PORT} is already in use by an active NERA-SMART backend instance. Using existing instance.`);
-  } else {
-    console.error("Server error:", err);
-  }
-});
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.log(`⚠️ Port ${PORT} is already in use by an active NERA-SMART backend instance. Using existing instance.`);
+    } else {
+      console.error("Server error:", err);
+    }
+  });
+}
+
+module.exports = app;
