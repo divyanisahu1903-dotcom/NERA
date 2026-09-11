@@ -120,10 +120,8 @@ function App() {
           setIsCalculating(false);
           if (res && res.routes) {
             setRouteData(res);
-            // Default selected route if route-b exists
-            if (!res.routes.find((r) => r.id === selectedRouteId)) {
-              setSelectedRouteId(res.routes[0]?.id || "route-b");
-            }
+            const rec = res.routes.find((r) => r.isRecommended) || res.routes[0];
+            if (rec) setSelectedRouteId(rec.id);
           }
         }
       });
@@ -140,11 +138,12 @@ function App() {
     }
     return (
       routeData.routes.find((r) => r.id === selectedRouteId) ||
+      routeData.routes.find((r) => r.isRecommended) ||
       routeData.routes[0]
     );
   }, [routeData, selectedRouteId, origin, destination, cargoType, vehicleType]);
 
-  const recommendedRoute = routeData?.routes?.[0] || activeRoute;
+  const recommendedRoute = routeData?.routes?.find((r) => r.isRecommended) || routeData?.routes?.[0] || activeRoute;
 
   // Recalculate Button Handler
   const handleAnalyze = () => {
@@ -154,6 +153,8 @@ function App() {
       setIsCalculating(false);
       if (res && res.routes) {
         setRouteData(res);
+        const rec = res.routes.find((r) => r.isRecommended) || res.routes[0];
+        if (rec) setSelectedRouteId(rec.id);
         showToast(`AI Corridor recalculated: ${origin.toUpperCase()} → ${destination.toUpperCase()}`);
       }
       setActivePage("Smart Routes");

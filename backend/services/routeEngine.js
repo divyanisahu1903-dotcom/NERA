@@ -1,8 +1,8 @@
-// Main NERA AI Route Engine Service executing the 13-Stage Logistics Workflow Pipeline:
+// Dynamic NERA AI Route Engine Service executing the 13-Stage Logistics Workflow Pipeline:
 // 1. User Input -> 2. Origin+Destination -> 3. Cargo+Vehicle -> 4. Available Routes ->
 // 5. Weather Analysis -> 6. Terrain Analysis -> 7. Road/Risk Analysis -> 8. Accessibility Analysis ->
 // 9. AI Risk & Delay Prediction -> 10. Route Scoring -> 11. Routes Comparison ->
-// 12. AI Recommended Route -> 13. Dashboard + Telemetry Explanation Payload.
+// 12. Dynamic AI Recommended Route Selection -> 13. Dashboard + Telemetry Explanation Payload.
 
 const {
   NERA_HUBS,
@@ -17,6 +17,60 @@ const { analyzeWeather } = require("./weatherService");
 const { analyzeTerrain } = require("./terrainService");
 const { analyzeRoadRisk } = require("./roadRiskService");
 
+/**
+ * Generates dynamic, context-aware highway corridor names based on origin and destination.
+ */
+function getDynamicCorridorNames(origin, dest) {
+  const pair = [origin.id, dest.id].sort().join("-");
+
+  if (pair === "aizawl-silchar") {
+    return {
+      a: { name: "NH-306 Direct Highway", via: "Via Silchar - Vairengte Asphalt Trunk", summary: "Primary direct inter-state National Highway" },
+      b: { name: "AI Bypass via Kolasib Ridge", via: "Via AI Low-Displacement Ridge Bypass", summary: "Smart bypass routing around active mudslide sections" },
+      c: { name: "NH-108 State Ridge Corridor", via: "Via Rengtekawn All-Terrain Alternate", summary: "High-clearance ridge detour for heavy weather clearance" },
+    };
+  }
+
+  if (pair === "guwahati-imphal") {
+    return {
+      a: { name: "NH-27 Expressway via Dimapur", via: "Via Nagaon - Dimapur 4-Lane Trunk", summary: "High capacity national expressway corridor" },
+      b: { name: "AI Bypass via Noney Creep Avoidance", via: "Via FastPass Hills & Awangkhul Bypass", summary: "Sensored corridor avoiding active Noney soil creep" },
+      c: { name: "Old Cachar Mountain Highway", via: "Via Jiribam Inland Ridge Route", summary: "Heavy load contingency pass with single-lane regulation" },
+    };
+  }
+
+  if (pair === "guwahati-shillong") {
+    return {
+      a: { name: "NH-06 Plateau Expressway", via: "Via Jorabat - Umiam Lake Highway", summary: "4-lane paved mountain ascent expressway" },
+      b: { name: "AI Mawryngkneng Cloud Bypass", via: "Via AI Fog Radar Bypass & East Khasi Ridge", summary: "Low-visibility radar guided bypass corridor" },
+      c: { name: "State Highway 1 Old Plateau Pass", via: "Via Mawlyndep Hinterland Spur", summary: "Secondary plateau road bypassing main toll plazas" },
+    };
+  }
+
+  if (pair === "dimapur-kohima") {
+    return {
+      a: { name: "NH-29 Mountain Corridor", via: "Via Chumukedima Hairpin Curves", summary: "Direct national highway connecting Dimapur & Kohima" },
+      b: { name: "AI Peducha Slope Bypass", via: "Via Regulated Smart Hill Bypass", summary: "Avoids loose gravel and silt subsidence bends" },
+      c: { name: "Tsiesema Inland Ridge Track", via: "Via Inland State Highway Alternate", summary: "High elevation dry surface alternate route" },
+    };
+  }
+
+  if (pair === "gangtok-guwahati" || pair === "gangtok-tezpur") {
+    return {
+      a: { name: "NH-10 Teesta River Highway", via: "Via Rangpo & Sevoke Bridge Transit", summary: "Primary Himalayan river valley corridor" },
+      b: { name: "AI Lava-Algarah High Bypass", via: "Via High Altitude Flood-Safe Pass", summary: "Bypasses Teesta river inundation hazard zones" },
+      c: { name: "Dooars Plain Circuit Highway", via: "Via Malbazar Foothill Detour", summary: "Longer lowland bypass for severe weather closures" },
+    };
+  }
+
+  // Generic Dynamic Naming based on hub names
+  return {
+    a: { name: `NH Main Corridor (${origin.name} → ${dest.name})`, via: `Via Direct NH Network`, summary: `Primary Direct Highway Connection` },
+    b: { name: `AI Smart Bypass (${origin.name} → ${dest.name})`, via: `Via AI Weather-Radar Bypass`, summary: `Optimized via AI sensor telemetry & smart bypasses` },
+    c: { name: `State Ridge Alternate (${origin.name} → ${dest.name})`, via: `Via Ridge Bypass Highway`, summary: `High-clearance mountain ridge alternate` },
+  };
+}
+
 function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", vehicleType = "Heavy Truck") {
   // STAGE 1: User Input Validation
   const origin = NERA_HUBS.find((h) => h.id === originId) || NERA_HUBS[0];
@@ -24,51 +78,47 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
   const cargo = CARGO_PROFILES[cargoType] || CARGO_PROFILES["Medical Supplies"];
   const vehicle = VEHICLE_PROFILES[vehicleType] || VEHICLE_PROFILES["Heavy Truck"];
 
-  // STAGE 2: Base Distance Calculation
+  // STAGE 2: Base Distance & Speed Calculation
   const baseDistance = getDistance(origin.id, dest.id);
   const baseSpeed = 48 * vehicle.speedMultiplier;
+
+  // Get Contextual Highway Names
+  const names = getDynamicCorridorNames(origin, dest);
 
   // STAGE 3: Available Routes Candidate Discovery
   const candidateCorridors = [
     {
       id: "route-b",
-      name: "Route B",
-      badge: "AI RECOMMENDED",
-      tag: "Recommended",
-      isRecommended: true,
-      summary: "Optimized via Smart Bypasses & Weather Safe Corridors",
+      name: names.b.name,
+      summary: names.b.summary,
       distanceKm: Math.round(baseDistance * 0.94),
       speedFactor: 1.08,
       terrainMultiplier: 0.92,
-      via: "Via AI Bypass Corridor & Enhanced NERA Network",
+      via: names.b.via,
+      type: "bypass",
     },
     {
       id: "route-a",
-      name: "Route A",
-      badge: "STANDARD HIGHWAY",
-      tag: "Alternative",
-      isRecommended: false,
-      summary: "Primary National Highway Corridor",
+      name: names.a.name,
+      summary: names.a.summary,
       distanceKm: baseDistance,
       speedFactor: 1.0,
       terrainMultiplier: 1.0,
-      via: "Direct NH Corridor",
+      via: names.a.via,
+      type: "direct",
     },
     {
       id: "route-c",
-      name: "Route C",
-      badge: "CONTINGENCY MOUNTAIN ROUTE",
-      tag: "Contingency",
-      isRecommended: false,
-      summary: "All-Terrain High Clearance Alternate",
+      name: names.c.name,
+      summary: names.c.summary,
       distanceKm: Math.round(baseDistance * 1.12),
       speedFactor: 0.95,
       terrainMultiplier: 1.0,
-      via: "Ridge Bypass & Inland State Highway",
+      via: names.c.via,
+      type: "contingency",
     },
   ];
 
-  // Helper duration formatter
   const formatDuration = (decHours) => {
     const hrs = Math.floor(decHours);
     const mins = Math.round((decHours - hrs) * 60);
@@ -77,8 +127,8 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
 
   const fuelCostPerKm = 105; // INR / Liter approx
 
-  // Process candidate routes through Stage 4 to 12
-  const evaluatedRoutes = candidateCorridors.map((candidate) => {
+  // Process candidate routes through Stage 4 to 9
+  const processedRoutes = candidateCorridors.map((candidate) => {
     const dist = candidate.distanceKm;
 
     // STAGE 4: Weather Analysis
@@ -95,62 +145,74 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
     const destStateAccess = STATE_ACCESSIBILITY.find((s) => s.state === dest.state) || STATE_ACCESSIBILITY[0];
     const avgStateAccessScore = Math.round((originStateAccess.index + destStateAccess.index) / 2);
 
-    // Check remote district vulnerability penalty
     const vulnerableDistrict = VULNERABLE_DISTRICTS.find(
       (v) => v.state === dest.state || v.state === origin.state
     );
     const isolationPenalty = vulnerableDistrict ? 6 : 0;
-    const finalAccessScore = Math.max(45, Math.min(98, avgStateAccessScore - isolationPenalty + (candidate.id === "route-b" ? 8 : candidate.id === "route-c" ? -5 : 0)));
+    const finalAccessScore = Math.max(45, Math.min(98, avgStateAccessScore - isolationPenalty + (candidate.type === "bypass" ? 8 : candidate.type === "contingency" ? -5 : 0)));
 
     // STAGE 8: AI Risk & Delay Prediction
     const rawHours = (dist / (baseSpeed * candidate.speedFactor)) * (vehicle.terrainPenalty * candidate.terrainMultiplier);
     
     let baseDelayMins = Math.round(35 + dist / 20);
-    if (candidate.id === "route-b") {
+    if (candidate.type === "bypass") {
       baseDelayMins = Math.max(12, Math.round(baseDelayMins * 0.35));
-    } else if (candidate.id === "route-c") {
+    } else if (candidate.type === "contingency") {
       baseDelayMins = Math.round(baseDelayMins * 0.65);
     }
 
     const predictedDelayText = `${baseDelayMins} min`;
     const landslideRisk = terrain.landslideLikelihood;
 
-    // STAGE 9: Route Scoring (Multi-criteria utility function)
+    // STAGE 9: Route Scoring
     let safetyScore = 78 - Math.round(roadRisk.corridorHazardScore * 0.4) - Math.round(weather.weatherRiskScore * 0.3);
-    if (candidate.id === "route-b") safetyScore += 16;
-    if (candidate.id === "route-c") safetyScore += 6;
+    if (candidate.type === "bypass") safetyScore += 16;
+    if (candidate.type === "contingency") safetyScore += 6;
     safetyScore = Math.max(48, Math.min(98, Math.round(safetyScore / cargo.safetyWeight)));
 
-    let efficiencyScore = candidate.id === "route-b" ? 92 : candidate.id === "route-a" ? 78 : 68;
+    let efficiencyScore = candidate.type === "bypass" ? 92 : candidate.type === "direct" ? 78 : 68;
 
-    // Financial & Carbon metrics calculation
-    const fuelCostMultiplier = candidate.id === "route-b" ? 1.25 : candidate.id === "route-a" ? 1.4 : 1.55;
+    // Financial & Carbon metrics
+    const fuelCostMultiplier = candidate.type === "bypass" ? 1.25 : candidate.type === "direct" ? 1.4 : 1.55;
     const estCost = Math.round(dist * parseFloat(vehicle.fuelPerKm) * fuelCostPerKm * fuelCostMultiplier);
     const carbonKg = Math.round(dist * vehicle.carbonKgPerKm);
 
-    // Waypoints / Checkpoint telemetry
+    // Multi-Criteria AI Utility Function (Weights adapt by cargo profile)
+    let wSafety = 0.40;
+    let wAccess = 0.25;
+    let wEfficiency = 0.35;
+
+    if (cargoType === "Medical Supplies") {
+      wSafety = 0.55;
+      wAccess = 0.25;
+      wEfficiency = 0.20;
+    } else if (cargoType === "Food & Agriculture") {
+      wSafety = 0.30;
+      wAccess = 0.20;
+      wEfficiency = 0.50;
+    } else if (cargoType === "Heavy Machinery") {
+      wSafety = 0.50;
+      wAccess = 0.35;
+      wEfficiency = 0.15;
+    }
+
+    // Calculated utility score for dynamic recommendation
+    const aiUtilityScore = parseFloat(
+      (safetyScore * wSafety + finalAccessScore * wAccess + efficiencyScore * wEfficiency).toFixed(2)
+    );
+
+    // Checkpoints telemetry
     const checkpoints = [
       { name: `${origin.name} Freight Terminal`, status: "Clear", time: "+0m" },
-      { name: "Central Highway Patrol Post", status: candidate.id === "route-b" ? "Active FastPass" : "Moderate Queue", time: "+2h 15m" },
-      { name: "Protected Hill Corridor Section", status: candidate.id === "route-b" ? "Sensors Online" : "Caution Wet Surface", time: "+5h 00m" },
+      { name: "Central Highway Patrol Post", status: candidate.type === "bypass" ? "Active FastPass" : "Moderate Queue", time: "+2h 15m" },
+      { name: "Protected Hill Corridor Section", status: candidate.type === "bypass" ? "Sensors Online" : "Caution Wet Surface", time: "+5h 00m" },
       { name: `${dest.name} Integrated Hub`, status: "Dock Open", time: `+${formatDuration(rawHours)}` },
     ];
-
-    let aiRationale = "";
-    if (candidate.id === "route-b") {
-      aiRationale = `Route B is prioritized because it reduces exposure to unstable slope sections by 64%, maintains cellular/telemetry coverage across 98% of the corridor, and saves fuel transit costs for ${cargoType}.`;
-    } else if (candidate.id === "route-a") {
-      aiRationale = `Route A follows the primary national highway alignment. While direct, it currently experiences moderate cargo queue delays and monsoon rainfall vulnerability.`;
-    } else {
-      aiRationale = `Route C is a high-clearance contingency bypass to be deployed when primary passes are affected by major weather disruptions.`;
-    }
 
     return {
       id: candidate.id,
       name: candidate.name,
-      badge: candidate.badge,
-      tag: candidate.tag,
-      isRecommended: candidate.isRecommended,
+      type: candidate.type,
       summary: candidate.summary,
       distance: `${dist} km`,
       rawDistanceKm: dist,
@@ -159,6 +221,7 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
       safetyScore,
       accessibilityScore: finalAccessScore,
       efficiencyScore,
+      aiUtilityScore,
       weatherRisk: weather.riskLevel,
       landslideRisk,
       predictedDelay: predictedDelayText,
@@ -167,7 +230,6 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
       carbonKg,
       via: candidate.via,
       checkpoints,
-      aiRationale,
       stageAnalysis: {
         weather,
         terrain,
@@ -182,8 +244,47 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
     };
   });
 
-  // STAGE 10 & 11: Route Comparison & Selection
-  const recommendedRoute = evaluatedRoutes.find((r) => r.isRecommended) || evaluatedRoutes[0];
+  // STAGE 10 & 11: Dynamic Recommendation & Ranking
+  // Find highest scoring route dynamically
+  let maxScore = -1;
+  let recommendedId = "route-b";
+  processedRoutes.forEach((r) => {
+    if (r.aiUtilityScore > maxScore) {
+      maxScore = r.aiUtilityScore;
+      recommendedId = r.id;
+    }
+  });
+
+  // Format dynamic badges, tags, and AI rationale for each route
+  const finalRoutes = processedRoutes.map((r) => {
+    const isRecommended = r.id === recommendedId;
+    let badge = r.type === "direct" ? "STANDARD HIGHWAY" : r.type === "contingency" ? "CONTINGENCY MOUNTAIN ROUTE" : "AI OPTIMIZED BYPASS";
+    let tag = r.type === "direct" ? "Direct Route" : r.type === "contingency" ? "Contingency" : "Alternative";
+
+    if (isRecommended) {
+      badge = "AI RECOMMENDED";
+      tag = "Recommended";
+    }
+
+    let aiRationale = "";
+    if (isRecommended) {
+      aiRationale = `${r.name} is dynamically recommended for ${cargoType} by the AI engine (Utility Score: ${r.aiUtilityScore}). It balances minimal delay risk (${r.predictedDelay}), high safety score (${r.safetyScore}/100), and fuel efficiency across ${origin.name} to ${dest.name}.`;
+    } else if (r.type === "direct") {
+      aiRationale = `${r.name} follows the standard national highway alignment. Direct distance (${r.distance}), but subject to moderate traffic and monsoon weather delays.`;
+    } else {
+      aiRationale = `${r.name} provides high clearance mountain ridge bypass capabilities for heavy weather or road closure conditions.`;
+    }
+
+    return {
+      ...r,
+      badge,
+      tag,
+      isRecommended,
+      aiRationale,
+    };
+  });
+
+  const recommendedRoute = finalRoutes.find((r) => r.isRecommended) || finalRoutes[0];
 
   // STAGE 12 & 13: Dashboard + Explanation Payload
   return {
@@ -192,12 +293,13 @@ function executeRoutePipeline(originId, destId, cargoType = "Medical Supplies", 
     pipelineMetadata: {
       stagesExecuted: 13,
       engineVersion: "NERA-AI-v2.4",
+      recommendationAlgorithm: "Multi-Criteria Dynamic Weighted Utility",
     },
     origin,
     dest,
     cargo,
     vehicle,
-    routes: evaluatedRoutes,
+    routes: finalRoutes,
     recommendedRoute,
   };
 }
