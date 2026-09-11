@@ -1,16 +1,30 @@
-# React + Vite
+# NERA-SMART Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the React 18 client application for the **NERA-SMART Logistics Intelligence Platform**.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Interactive Canvas Map**: Visualizes 12 NERA logistics hubs and animated transit corridors.
+- **Smart Route Decision Engine UI**: Interactive route selection (`Route A`, `Route B`, `Route C`) updating spotlight scores, AI rationale, and checkpoint telemetry.
+- **Live Regional Risk Feed**: Category and severity filter pills, hazard detail modal drawer, and real-time hazard submission form.
+- **Accessibility Watch**: State connectivity leaderboard and emergency relief buffer stock dispatch allocation.
+- **Analytics & Export**: Monthly delay trends, corridor leaderboard, CSV analytics export, and text dispatch ticket generator.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React 18 + Vite
+- **Icons**: Lucide React
+- **Styling**: Modern CSS3 Tokens with HSL Palette, Glassmorphism, and responsive breakpoints.
 
-## Expanding the Oxlint configuration
+## 📦 Commands
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+# Start Vite development server
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Preview production build
+npm run preview
+```
